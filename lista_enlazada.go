@@ -47,8 +47,47 @@ func (iter *iteradorLista[T]) Avanzar() {
 func (iter *iteradorLista[T]) Insertar(valor T) {
 	nuevo := &nodoLista[T]{dato: valor}
 
+	// insertar al inicio
 	if iter.anterior == nil {
 		nuevo.siguiente = iter.lista.primero
+		iter.lista.primero = nuevo
+
+	} else {
+		// esta en el medio
+		nuevo.siguiente = iter.actual
+		iter.anterior.siguiente = nuevo
 	}
 
+	// si esta al final
+	if iter.actual == nil {
+		iter.lista.ultimo = nuevo
+	}
+
+	iter.actual = nuevo
+	iter.lista.largo++
+}
+
+func (iter *iteradorLista[T]) Borrar() T {
+	if iter.actual == nil {
+		panic("El iterador termino de iterar")
+	}
+
+	borrado := iter.actual
+
+	//borrar primero
+	if iter.anterior == nil {
+		iter.lista.primero = borrado.siguiente
+	} else {
+		iter.anterior.siguiente = borrado.siguiente
+	}
+
+	// borrar ultimo
+	if borrado.siguiente == nil {
+		iter.lista.ultimo = iter.anterior
+	}
+
+	iter.actual = borrado.siguiente
+	iter.lista.largo--
+
+	return borrado.dato
 }
