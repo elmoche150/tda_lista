@@ -3,7 +3,7 @@ package lista_test
 import (
 	"testing"
 
-	lista "../tda_lista"
+	lista "lista/tda_lista"
 
 	"github.com/stretchr/testify/require"
 )
@@ -311,4 +311,217 @@ func TestVolumen(t *testing.T) {
 
 	require.True(t, lista_enteros.EstaVacia())
 
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func TestIteradorInsertarAlInicio(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	l.InsertarUltimo(2)
+	l.InsertarUltimo(3)
+
+	it := l.Iterador()
+	it.Insertar(1)
+
+	require.Equal(t, 1, l.VerPrimero())
+	require.Equal(t, 3, l.VerUltimo())
+	require.Equal(t, 3, l.Largo())
+}
+
+func TestIteradorInsertarEnMedio(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	l.InsertarUltimo(1)
+	l.InsertarUltimo(3)
+
+	it := l.Iterador()
+	it.Avanzar()
+	it.Insertar(2)
+
+	require.Equal(t, 3, l.Largo())
+
+	require.Equal(t, 1, l.BorrarPrimero())
+	require.Equal(t, 2, l.BorrarPrimero())
+	require.Equal(t, 3, l.BorrarPrimero())
+}
+
+func TestIteradorInsertarAlFinal(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	l.InsertarUltimo(1)
+	l.InsertarUltimo(2)
+
+	it := l.Iterador()
+	for it.HayAlgoMas() {
+		it.Avanzar()
+	}
+
+	it.Insertar(3)
+
+	require.Equal(t, 3, l.VerUltimo())
+	require.Equal(t, 3, l.Largo())
+}
+
+func TestIteradorBorrarPrimero(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	l.InsertarUltimo(1)
+	l.InsertarUltimo(2)
+
+	it := l.Iterador()
+	borrado := it.Borrar()
+
+	require.Equal(t, 1, borrado)
+	require.Equal(t, 2, l.VerPrimero())
+}
+
+func TestIteradorBorrarMedio(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	l.InsertarUltimo(1)
+	l.InsertarUltimo(2)
+	l.InsertarUltimo(3)
+
+	it := l.Iterador()
+	it.Avanzar() // apunta a 2
+
+	borrado := it.Borrar()
+
+	require.Equal(t, 2, borrado)
+
+	require.Equal(t, 1, l.BorrarPrimero())
+	require.Equal(t, 3, l.BorrarPrimero())
+}
+
+func TestIteradorBorrarUltimo(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	l.InsertarUltimo(1)
+	l.InsertarUltimo(2)
+
+	it := l.Iterador()
+	it.Avanzar() // 2
+
+	borrado := it.Borrar()
+
+	require.Equal(t, 2, borrado)
+	require.Equal(t, 1, l.VerUltimo())
+}
+
+func TestIteradorPanics(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	l.InsertarUltimo(1)
+
+	it := l.Iterador()
+	it.Avanzar() // ahora está al final
+
+	require.False(t, it.HayAlgoMas())
+
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() {
+		it.VerActual()
+	})
+
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() {
+		it.Avanzar()
+	})
+
+	require.PanicsWithValue(t, "El iterador termino de iterar", func() {
+		it.Borrar()
+	})
+}
+
+func TestIteradorListaVacia(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	it := l.Iterador()
+
+	require.False(t, it.HayAlgoMas())
+
+	it.Insertar(10)
+
+	require.Equal(t, 10, l.VerPrimero())
+	require.Equal(t, 10, l.VerUltimo())
+}
+
+func TestIteradorInternoCompleto(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	for i := 1; i <= 5; i++ {
+		l.InsertarUltimo(i)
+	}
+
+	suma := 0
+	l.Iterar(func(v int) bool {
+		suma += v
+		return true
+	})
+
+	require.Equal(t, 15, suma)
+}
+
+func TestIteradorInternoCorte(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	for i := 1; i <= 5; i++ {
+		l.InsertarUltimo(i)
+	}
+
+	contador := 0
+	l.Iterar(func(v int) bool {
+		contador++
+		return contador < 3
+	})
+
+	require.Equal(t, 3, contador)
+}
+
+func TestIteradorInsertarEnListaVacia(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	it := l.Iterador()
+
+	it.Insertar(10)
+
+	require.Equal(t, 10, l.VerPrimero())
+	require.Equal(t, 10, l.VerUltimo())
+	require.Equal(t, 1, l.Largo())
+}
+
+func TestIteradorBorrarUnicoElemento(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	l.InsertarUltimo(1)
+
+	it := l.Iterador()
+	borrado := it.Borrar()
+
+	require.Equal(t, 1, borrado)
+	require.True(t, l.EstaVacia())
+}
+
+func TestIteradorInsertarMultiplesSinAvanzar(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	it := l.Iterador()
+
+	it.Insertar(1)
+	it.Insertar(2)
+	it.Insertar(3)
+
+	require.Equal(t, 3, l.BorrarPrimero())
+	require.Equal(t, 2, l.BorrarPrimero())
+	require.Equal(t, 1, l.BorrarPrimero())
+}
+
+func TestIteradorBorrarHastaVacio(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	l.InsertarUltimo(1)
+	l.InsertarUltimo(2)
+
+	it := l.Iterador()
+	it.Borrar()
+	it.Borrar()
+
+	require.True(t, l.EstaVacia())
+}
+
+func TestIteradorInsertarLuegoDeTerminar(t *testing.T) {
+	l := lista.CrearListaEnlazada[int]()
+	l.InsertarUltimo(1)
+
+	it := l.Iterador()
+	it.Avanzar() // queda al final
+
+	it.Insertar(2)
+
+	require.Equal(t, 2, l.VerUltimo())
 }
