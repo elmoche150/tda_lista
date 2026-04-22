@@ -56,7 +56,7 @@ func (lista *listaEnlazada[T]) InsertarUltimo(elementoParaInsertar T) {
 func (lista *listaEnlazada[T]) BorrarPrimero() T {
 
 	if lista.EstaVacia() {
-		panic("la lista esta vacia")
+		panic("La lista esta vacia")
 	}
 
 	dato := lista.primero.dato
@@ -73,7 +73,7 @@ func (lista *listaEnlazada[T]) BorrarPrimero() T {
 func (lista *listaEnlazada[T]) VerPrimero() T {
 
 	if lista.EstaVacia() {
-		panic("la lista esta vacia")
+		panic("La lista esta vacia")
 	}
 
 	return lista.primero.dato
@@ -81,7 +81,7 @@ func (lista *listaEnlazada[T]) VerPrimero() T {
 
 func (lista *listaEnlazada[T]) VerUltimo() T {
 	if lista.EstaVacia() {
-		panic("la lista esta vacia")
+		panic("La lista esta vacia")
 	}
 
 	return lista.ultimo.dato
