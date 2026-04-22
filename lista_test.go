@@ -151,7 +151,7 @@ func TestBorrarPrimeroDevuelveElPrimerElemento(t *testing.T) {
 
 	lista_float64.InsertarPrimero(10.2)
 	lista_float64.InsertarPrimero(44.3)
-	require.Equal(t, 44.3, lista_strings.BorrarPrimero())
+	require.Equal(t, 44.3, lista_float64.BorrarPrimero())
 
 }
 
@@ -300,17 +300,16 @@ func TestVolumen(t *testing.T) {
 	lista_enteros := lista.CrearListaEnlazada[int]()
 
 	for i := 0; i < 10000; i++ {
-		lista_enteros.InsertarPrimero(i)
-		require.Equal(t, i, lista_enteros.VerPrimero())
+		lista_enteros.InsertarUltimo(i)
+		require.Equal(t, i, lista_enteros.VerUltimo())
 	}
-
+	require.Equal(t, 10000, lista_enteros.Largo())
 	for i := 0; i < 10000; i++ {
 		valor := lista_enteros.BorrarPrimero()
 		require.Equal(t, i, valor)
 	}
 
 	require.True(t, lista_enteros.EstaVacia())
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
