@@ -3,7 +3,7 @@ package lista_test
 import (
 	"testing"
 
-	lista "lista/tda_lista"
+	lista "tdas/lista"
 
 	"github.com/stretchr/testify/require"
 )
