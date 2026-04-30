@@ -3,7 +3,7 @@ package diccionario
 import (
 	"fmt"
 
-	"../lista"
+	"tdas/lista"
 )
 
 const (
@@ -22,6 +22,12 @@ type hashAbierto[K comparable, V any] struct {
 	tabla    []lista.Lista[parClaveValor[K, V]]
 	tam      int
 	cantidad int
+}
+
+type iterHash[K comparable, V any] struct {
+	hash         *hashAbierto[K, V]
+	iterLista    lista.IteradorLista[parClaveValor[K, V]]
+	indiceActual int
 }
 
 func convertirABytes[K comparable](clave K) []byte {
@@ -182,4 +188,69 @@ func (hash *hashAbierto[K, V]) Borrar(clave K) V {
 
 func (hash *hashAbierto[K, V]) Cantidad() int {
 	return hash.cantidad
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func (hash *hashAbierto[K, V]) Iterar(f func(clave K, dato V) bool) {
+	for _, l := range hash.tabla {
+		salir := false
+		l.Iterar(func(par parClaveValor[K, V]) bool {
+			if !f(par.clave, par.dato) {
+				salir = true
+				return false
+			}
+			return true
+		})
+		if salir {
+			break
+		}
+	}
+}
+
+func (hash *hashAbierto[K, V]) Iterador() IterDiccionario[K, V] {
+	iter := &iterHash[K, V]{hash: hash, indiceActual: 0}
+
+	for iter.indiceActual < iter.hash.tam && iter.hash.tabla[iter.indiceActual].EstaVacia() {
+		iter.indiceActual++
+	}
+
+	if iter.indiceActual < iter.hash.tam {
+		iter.iterLista = iter.hash.tabla[iter.indiceActual].Iterador()
+	}
+
+	return iter
+}
+
+func (iter *iterHash[K, V]) HayAlgoMas() bool {
+	return iter.iterLista != nil && iter.iterLista.HayAlgoMas()
+}
+
+func (iter *iterHash[K, V]) VerActual() (K, V) {
+	if !iter.HayAlgoMas() {
+		panic("El iterador termino de iterar")
+	}
+	par := iter.iterLista.VerActual()
+	return par.clave, par.dato
+}
+
+func (iter *iterHash[K, V]) Avanzar() {
+	if !iter.HayAlgoMas() {
+		panic("El iterador termino de iterar")
+	}
+
+	iter.iterLista.Avanzar()
+
+	if !iter.iterLista.HayAlgoMas() {
+		iter.indiceActual++
+		for iter.indiceActual < iter.hash.tam && iter.hash.tabla[iter.indiceActual].EstaVacia() {
+			iter.indiceActual++
+		}
+
+		if iter.indiceActual < iter.hash.tam {
+			iter.iterLista = iter.hash.tabla[iter.indiceActual].Iterador()
+		} else {
+			iter.iterLista = nil
+		}
+	}
 }
