@@ -9,7 +9,8 @@ import (
 const (
 	CAPACIDAD_INICIAL           = 10
 	CANTIDAD_INICIAL            = 0
-	PARAMETRO_PARA_AGRANDAR     = 2
+	FACTOR_CARGA_MAXIMO         = 0.75
+	FACTOR_CARGA_MINIMO         = 0.25
 	CANTIDAD_PARA_REDIMENSIONAR = 2
 )
 
@@ -64,9 +65,9 @@ func crearTabla[K comparable, V any](tam int) []lista.Lista[parClaveValor[K, V]]
 func (hash *hashAbierto[K, V]) chequearRedimension() {
 	factorCarga := float64(hash.cantidad) / float64(hash.tam)
 
-	if factorCarga > PARAMETRO_PARA_AGRANDAR {
+	if factorCarga > FACTOR_CARGA_MAXIMO {
 		hash.redimensionar(hash.tam * CANTIDAD_PARA_REDIMENSIONAR)
-	} else if factorCarga < 0.25 && hash.tam > CAPACIDAD_INICIAL {
+	} else if factorCarga < FACTOR_CARGA_MINIMO && hash.tam > CAPACIDAD_INICIAL {
 		nuevoTam := hash.tam / CANTIDAD_PARA_REDIMENSIONAR
 		if nuevoTam < CAPACIDAD_INICIAL {
 			nuevoTam = CAPACIDAD_INICIAL
@@ -77,14 +78,15 @@ func (hash *hashAbierto[K, V]) chequearRedimension() {
 
 func (hash *hashAbierto[K, V]) redimensionar(nuevoTam int) {
 	tablaVieja := hash.tabla
-
 	hash.tabla = crearTabla[K, V](nuevoTam)
 	hash.tam = nuevoTam
 	hash.cantidad = CANTIDAD_INICIAL
 
 	for _, l := range tablaVieja {
 		l.Iterar(func(par parClaveValor[K, V]) bool {
-			hash.Guardar(par.clave, par.dato)
+			indice := hash.indice(par.clave)
+			hash.tabla[indice].InsertarUltimo(par)
+			hash.cantidad++
 			return true
 		})
 	}
@@ -110,23 +112,24 @@ func CrearHash[K comparable, V any]() Diccionario[K, V] {
 
 func (hash *hashAbierto[K, V]) Guardar(clave K, dato V) {
 	indice := hash.indice(clave)
-	encontrado := false
+	lista := hash.tabla[indice]
 
-	hash.tabla[indice].Iterar(func(par parClaveValor[K, V]) bool {
-		if par.clave == clave {
-			encontrado = true
-			return false
+	iter := lista.Iterador()
+
+	for iter.HayAlgoMas() {
+		actual := iter.VerActual()
+
+		if actual.clave == clave {
+			iter.Borrar()
+			iter.Insertar(parClaveValor[K, V]{clave, dato})
+			return
 		}
-		return true
-	})
-
-	if encontrado {
-		hash.borrarDeLista(indice, clave)
-	} else {
-		hash.cantidad++
+		iter.Avanzar()
 	}
 
-	hash.tabla[indice].InsertarUltimo(parClaveValor[K, V]{clave, dato})
+	lista.InsertarUltimo(parClaveValor[K, V]{clave, dato})
+	hash.cantidad++
+
 	hash.chequearRedimension()
 }
 func (hash *hashAbierto[K, V]) Obtener(clave K) V {
