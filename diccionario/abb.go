@@ -102,49 +102,50 @@ func buscarMinimo[K comparable, V any](actual *nodoAbb[K, V]) *nodoAbb[K, V] {
 	return buscarMinimo(actual.izquierdo)
 }
 
-func (a *abb[K, V]) borrarNodo(actual *nodoAbb[K, V], clave K) (*nodoAbb[K, V], V) {
+// borrarNodo ahora devuelve (nuevoNodo, valor, encontrado)
+// borrarNodo ahora devuelve (nuevoNodo, valor, encontrado)
+func (a *abb[K, V]) borrarNodo(actual *nodoAbb[K, V], clave K) (*nodoAbb[K, V], V, bool) {
 	if actual == nil {
 		var cero V
-		return nil, cero
+		return nil, cero, false // No lo encontré, aviso con el 'false'
 	}
+
 	comparacion := a.cmp(clave, actual.clave)
 
 	if comparacion < COMPARACION_MENOR {
-		var dato V
-
-		actual.izquierdo, dato = a.borrarNodo(actual.izquierdo, clave)
-		return actual, dato
+		izq, dato, ok := a.borrarNodo(actual.izquierdo, clave)
+		actual.izquierdo = izq
+		return actual, dato, ok
 	}
 
 	if comparacion > COMPARACION_MAYOR {
-		var dato V
-
-		actual.derecho, dato = a.borrarNodo(actual.derecho, clave)
-		return actual, dato
+		der, dato, ok := a.borrarNodo(actual.derecho, clave)
+		actual.derecho = der
+		return actual, dato, ok
 	}
 
+	// ¡Lo encontramos! (comparacion == 0)
 	datoBorrado := actual.dato
 
-	if actual.izquierdo == nil && actual.derecho == nil {
-		return nil, datoBorrado
-	}
-
+	// Caso 1: Hoja o un solo hijo
 	if actual.izquierdo == nil {
-		return actual.derecho, datoBorrado
+		return actual.derecho, datoBorrado, true
 	}
-
 	if actual.derecho == nil {
-		return actual.izquierdo, datoBorrado
+		return actual.izquierdo, datoBorrado, true
 	}
 
+	// Caso 2: Dos hijos (buscamos reemplazo con el sucesor)
 	sucesor := buscarMinimo(actual.derecho)
-
 	actual.clave = sucesor.clave
 	actual.dato = sucesor.dato
 
-	actual.derecho, _ = a.borrarNodo(actual.derecho, sucesor.clave)
+	// Borramos el sucesor en el subárbol derecho
+	// Nota: acá no necesitamos el booleano porque sabemos que el sucesor existe
+	der, _, _ := a.borrarNodo(actual.derecho, sucesor.clave)
+	actual.derecho = der
 
-	return actual, datoBorrado
+	return actual, datoBorrado, true
 }
 
 func (a *abb[K, V]) iterarRangoNodo(actual *nodoAbb[K, V], desde *K, hasta *K, visitar func(K, V) bool) bool {
@@ -256,14 +257,13 @@ func (a *abb[K, V]) Obtener(clave K) V {
 }
 
 func (a *abb[K, V]) Borrar(clave K) V {
-	if !a.Pertenece(clave) {
+
+	nuevaRaiz, datoBorrado, encontrado := a.borrarNodo(a.raiz, clave)
+	if !encontrado {
 		panic("La clave no pertenece al diccionario")
 	}
 
-	var datoBorrado V
-
-	a.raiz, datoBorrado = a.borrarNodo(a.raiz, clave)
-
+	a.raiz = nuevaRaiz
 	a.cantidad--
 	return datoBorrado
 }
