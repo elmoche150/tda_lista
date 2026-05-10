@@ -1,10 +1,12 @@
 package diccionario
 
+import "tdas/pila"
+
 const (
-	CANTIDAD_INICIAL   = 0
-	COMPARACION_MENOR  = 0
-	COMPARACION_MAYOR  = 0
-	COMPPARACION_IGUAL = 0
+	CANTIDAD_INICIAL  = 0
+	COMPARACION_MENOR = 0
+	COMPARACION_MAYOR = 0
+	COMPARACION_IGUAL = 0
 )
 
 type funcCmp[K comparable] func(K, K) int
@@ -40,14 +42,15 @@ func (a *abb[K, V]) guardarNodo(actual *nodoAbb[K, V], clave K, dato V) *nodoAbb
 	comparacion := a.cmp(clave, actual.clave)
 
 	if comparacion < COMPARACION_MENOR {
+
 		actual.izquierdo = a.guardarNodo(actual.izquierdo, clave, dato)
-	}
 
-	if comparacion > COMPARACION_MAYOR {
+	} else if comparacion > COMPARACION_MAYOR {
+
 		actual.derecho = a.guardarNodo(actual.derecho, clave, dato)
-	}
 
-	if comparacion == COMPPARACION_IGUAL {
+	} else {
+
 		actual.dato = dato
 	}
 
@@ -190,8 +193,50 @@ func (iter *iterAbb[K, V]) apilarRamaIzquierdaRango(actual *nodoAbb[K, V]) {
 	}
 }
 
+func (iter *iterAbb[K, V]) HayAlgoMas() bool {
+
+	if iter.pila.EstaVacia() {
+		return false
+	}
+
+	if iter.hasta != nil {
+
+		actual := iter.pila.VerTope()
+
+		if iter.abb.cmp(actual.clave, *iter.hasta) > 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (iter *iterAbb[K, V]) VerActual() (K, V) {
+
+	if !iter.HayAlgoMas() {
+		panic("El iterador termino de iterar")
+	}
+
+	actual := iter.pila.VerTope()
+
+	return actual.clave, actual.dato
+}
+
+func (iter *iterAbb[K, V]) Avanzar() {
+
+	if !iter.HayAlgoMas() {
+		panic("El iterador termino de iterar")
+	}
+
+	actual := iter.pila.Desapilar()
+
+	if actual.derecho != nil {
+		iter.apilarRamaIzquierdaRango(actual.derecho)
+	}
+}
+
 func CrearABB[K comparable, V any](funcion_cmp func(K, K) int) DiccionarioOrdenado[K, V] {
-	return &abb[K, V]{raiz: nil, cantidad: CANTIDAD_INICIAL, cmp: funcionCmp}
+	return &abb[K, V]{raiz: nil, cantidad: CANTIDAD_INICIAL, cmp: funcion_cmp}
 }
 
 func (a *abb[K, V]) Guardar(clave K, dato V) {
@@ -205,8 +250,7 @@ func (a *abb[K, V]) Pertenece(clave K) bool {
 func (a *abb[K, V]) Obtener(clave K) V {
 	elemento := a.obtenerNodo(a.raiz, clave)
 	if elemento == nil {
-		print("no existe la clave")
-		panic("no existe la clave")
+		panic("La clave no pertenece al diccionario")
 	}
 	return elemento.dato
 }
@@ -229,10 +273,17 @@ func (a *abb[K, V]) Cantidad() int {
 }
 
 func (a *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
+
+	if desde != nil && hasta != nil &&
+		a.cmp(*desde, *hasta) > 0 {
+		return
+	}
+
 	a.iterarRangoNodo(a.raiz, desde, hasta, visitar)
 }
 
 func (a *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
+
 	iter := &iterAbb[K, V]{
 		pila:  pila.CrearPilaDinamica[*nodoAbb[K, V]](),
 		abb:   a,
@@ -240,7 +291,21 @@ func (a *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 		hasta: hasta,
 	}
 
+	if desde != nil && hasta != nil &&
+		a.cmp(*desde, *hasta) > 0 {
+
+		return iter
+	}
+
 	iter.apilarRamaIzquierdaRango(a.raiz)
 
 	return iter
+}
+
+func (a *abb[K, V]) Iterador() IterDiccionario[K, V] {
+	return a.IteradorRango(nil, nil)
+}
+
+func (a *abb[K, V]) Iterar(visitar func(K, V) bool) {
+	a.IterarRango(nil, nil, visitar)
 }
