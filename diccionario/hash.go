@@ -94,13 +94,21 @@ func (hash *hashAbierto[K, V]) redimensionar(nuevoTam int) {
 	}
 }
 
-func (hash *hashAbierto[K, V]) buscarClave(indice int, clave K) lista.IteradorLista[parClaveValor[K, V]] {
-	iter := hash.tabla[indice].Iterador()
+func (hash *hashAbierto[K, V]) buscarClave(clave K) lista.IteradorLista[parClaveValor[K, V]] {
+	iter := hash.tabla[hash.indice(clave)].Iterador()
 	for iter.HayAlgoMas() {
 		if iter.VerActual().clave == clave {
 			return iter
 		}
 		iter.Avanzar()
+	}
+	return iter
+}
+
+func (hash *hashAbierto[K, V]) buscarClaveExistente(clave K) lista.IteradorLista[parClaveValor[K, V]] {
+	iter := hash.buscarClave(clave)
+	if !iter.HayAlgoMas() {
+		panic("La clave no pertenece al diccionario")
 	}
 	return iter
 }
@@ -113,46 +121,29 @@ func CrearHash[K comparable, V any]() Diccionario[K, V] {
 }
 
 func (hash *hashAbierto[K, V]) Guardar(clave K, dato V) {
-	indice := hash.indice(clave)
-	iter := hash.buscarClave(indice, clave)
-
+	iter := hash.buscarClave(clave)
 	if iter.HayAlgoMas() {
 		iter.Borrar()
 	} else {
 		hash.cantidad++
 	}
 	iter.Insertar(parClaveValor[K, V]{clave, dato})
-
 	hash.chequearRedimension()
 }
 func (hash *hashAbierto[K, V]) Obtener(clave K) V {
-	indice := hash.indice(clave)
-	iter := hash.buscarClave(indice, clave)
-
-	if !iter.HayAlgoMas() {
-		panic("La clave no pertenece al diccionario")
-	}
-	return iter.VerActual().dato
+	return hash.buscarClaveExistente(clave).VerActual().dato
 }
 
 func (hash *hashAbierto[K, V]) Pertenece(clave K) bool {
-	indice := hash.indice(clave)
-	return hash.buscarClave(indice, clave).HayAlgoMas()
+	return hash.buscarClave(clave).HayAlgoMas()
 }
 
 func (hash *hashAbierto[K, V]) Borrar(clave K) V {
-	indice := hash.indice(clave)
-	iter := hash.buscarClave(indice, clave)
-
-	if !iter.HayAlgoMas() {
-		panic("La clave no pertenece al diccionario")
-	}
-
+	iter := hash.buscarClaveExistente(clave)
 	dato := iter.VerActual().dato
 	iter.Borrar()
 	hash.cantidad--
 	hash.chequearRedimension()
-
 	return dato
 }
 
