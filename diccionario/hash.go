@@ -61,22 +61,6 @@ func crearTabla[K comparable, V any](tam int) []lista.Lista[parClaveValor[K, V]]
 
 	return tabla
 }
-func (hash *hashAbierto[K, V]) chequearRedimension() {
-	factorCarga := float64(hash.cantidad) / float64(hash.tam)
-
-	if factorCarga > FACTOR_CARGA_MAXIMO {
-		hash.redimensionar(hash.tam * FACTOR_REDIMENSION)
-		return
-	}
-
-	if factorCarga < FACTOR_CARGA_MINIMO && hash.tam > CAPACIDAD_INICIAL {
-		nuevoTam := hash.tam / FACTOR_REDIMENSION
-		if nuevoTam < CAPACIDAD_INICIAL {
-			nuevoTam = CAPACIDAD_INICIAL
-		}
-		hash.redimensionar(nuevoTam)
-	}
-}
 
 func (hash *hashAbierto[K, V]) redimensionar(nuevoTam int) {
 	tablaVieja := hash.tabla
@@ -121,15 +105,25 @@ func CrearHash[K comparable, V any]() Diccionario[K, V] {
 }
 
 func (hash *hashAbierto[K, V]) Guardar(clave K, dato V) {
+
 	iter := hash.buscarClave(clave)
-	if iter.HayAlgoMas() {
-		iter.Borrar()
-	} else {
+
+	if !iter.HayAlgoMas() {
+
+		if float64(hash.cantidad+1)/float64(hash.tam) > FACTOR_CARGA_MAXIMO {
+			hash.redimensionar(hash.tam * FACTOR_REDIMENSION)
+
+			iter = hash.buscarClave(clave)
+		}
+
 		hash.cantidad++
+	} else {
+		iter.Borrar()
 	}
+
 	iter.Insertar(parClaveValor[K, V]{clave, dato})
-	hash.chequearRedimension()
 }
+
 func (hash *hashAbierto[K, V]) Obtener(clave K) V {
 	return hash.buscarClaveExistente(clave).VerActual().dato
 }
@@ -143,7 +137,19 @@ func (hash *hashAbierto[K, V]) Borrar(clave K) V {
 	dato := iter.VerActual().dato
 	iter.Borrar()
 	hash.cantidad--
-	hash.chequearRedimension()
+
+	if float64(hash.cantidad)/float64(hash.tam) < FACTOR_CARGA_MINIMO &&
+		hash.tam > CAPACIDAD_INICIAL {
+
+		nuevoTam := hash.tam / FACTOR_REDIMENSION
+
+		if nuevoTam < CAPACIDAD_INICIAL {
+			nuevoTam = CAPACIDAD_INICIAL
+		}
+
+		hash.redimensionar(nuevoTam)
+	}
+
 	return dato
 }
 
