@@ -2,13 +2,6 @@ package diccionario
 
 import "tdas/pila"
 
-const (
-	CANTIDAD_INICIAL  = 0
-	COMPARACION_MENOR = 0
-	COMPARACION_MAYOR = 0
-	COMPARACION_IGUAL = 0
-)
-
 type funcCmp[K comparable] func(K, K) int
 
 type nodoAbb[K comparable, V any] struct {
@@ -31,21 +24,25 @@ type iterAbb[K comparable, V any] struct {
 	hasta *K
 }
 
+func crearNodoAbb[K comparable, V any](clave K, dato V) *nodoAbb[K, V] {
+	return &nodoAbb[K, V]{
+		clave: clave,
+		dato:  dato,
+	}
+}
+
 func (a *abb[K, V]) guardarNodo(actual *nodoAbb[K, V], clave K, dato V) *nodoAbb[K, V] {
 	if actual == nil {
 		a.cantidad++
-		return &nodoAbb[K, V]{
-			clave: clave,
-			dato:  dato,
-		}
+		return crearNodoAbb(clave, dato)
 	}
 	comparacion := a.cmp(clave, actual.clave)
 
-	if comparacion < COMPARACION_MENOR {
+	if comparacion < 0 {
 
 		actual.izquierdo = a.guardarNodo(actual.izquierdo, clave, dato)
 
-	} else if comparacion > COMPARACION_MAYOR {
+	} else if comparacion > 0 {
 
 		actual.derecho = a.guardarNodo(actual.derecho, clave, dato)
 
@@ -57,25 +54,6 @@ func (a *abb[K, V]) guardarNodo(actual *nodoAbb[K, V], clave K, dato V) *nodoAbb
 	return actual
 }
 
-func (a *abb[K, V]) perteneceNodo(actual *nodoAbb[K, V], clave K) bool {
-	if actual == nil {
-		return false
-	}
-
-	comparacion := a.cmp(clave, actual.clave)
-
-	if comparacion < COMPARACION_MENOR {
-		return a.perteneceNodo(actual.izquierdo, clave)
-	}
-
-	if comparacion > COMPARACION_MAYOR {
-		return a.perteneceNodo(actual.derecho, clave)
-	}
-
-	return true
-
-}
-
 func (a *abb[K, V]) obtenerNodo(actual *nodoAbb[K, V], clave K) *nodoAbb[K, V] {
 	if actual == nil {
 		return nil
@@ -83,11 +61,11 @@ func (a *abb[K, V]) obtenerNodo(actual *nodoAbb[K, V], clave K) *nodoAbb[K, V] {
 
 	comparacion := a.cmp(clave, actual.clave)
 
-	if comparacion < COMPARACION_MENOR {
+	if comparacion < 0 {
 		return a.obtenerNodo(actual.izquierdo, clave)
 	}
 
-	if comparacion > COMPARACION_MAYOR {
+	if comparacion > 0 {
 		return a.obtenerNodo(actual.derecho, clave)
 	}
 
@@ -102,50 +80,44 @@ func buscarMinimo[K comparable, V any](actual *nodoAbb[K, V]) *nodoAbb[K, V] {
 	return buscarMinimo(actual.izquierdo)
 }
 
-// borrarNodo ahora devuelve (nuevoNodo, valor, encontrado)
-// borrarNodo ahora devuelve (nuevoNodo, valor, encontrado)
-func (a *abb[K, V]) borrarNodo(actual *nodoAbb[K, V], clave K) (*nodoAbb[K, V], V, bool) {
-	if actual == nil {
-		var cero V
-		return nil, cero, false // No lo encontré, aviso con el 'false'
+func (a *abb[K, V]) borrarNodo(actual **nodoAbb[K, V], clave K) (V, bool) {
+
+	var cero V
+
+	if *actual == nil {
+		return cero, false
 	}
 
-	comparacion := a.cmp(clave, actual.clave)
+	comparacion := a.cmp(clave, (*actual).clave)
 
-	if comparacion < COMPARACION_MENOR {
-		izq, dato, ok := a.borrarNodo(actual.izquierdo, clave)
-		actual.izquierdo = izq
-		return actual, dato, ok
+	if comparacion < 0 {
+		return a.borrarNodo(&(*actual).izquierdo, clave)
 	}
 
-	if comparacion > COMPARACION_MAYOR {
-		der, dato, ok := a.borrarNodo(actual.derecho, clave)
-		actual.derecho = der
-		return actual, dato, ok
+	if comparacion > 0 {
+		return a.borrarNodo(&(*actual).derecho, clave)
 	}
 
-	// ¡Lo encontramos! (comparacion == 0)
-	datoBorrado := actual.dato
+	datoBorrado := (*actual).dato
 
-	// Caso 1: Hoja o un solo hijo
-	if actual.izquierdo == nil {
-		return actual.derecho, datoBorrado, true
-	}
-	if actual.derecho == nil {
-		return actual.izquierdo, datoBorrado, true
+	if (*actual).izquierdo == nil {
+		*actual = (*actual).derecho
+		return datoBorrado, true
 	}
 
-	// Caso 2: Dos hijos (buscamos reemplazo con el sucesor)
-	sucesor := buscarMinimo(actual.derecho)
-	actual.clave = sucesor.clave
-	actual.dato = sucesor.dato
+	if (*actual).derecho == nil {
+		*actual = (*actual).izquierdo
+		return datoBorrado, true
+	}
 
-	// Borramos el sucesor en el subárbol derecho
-	// Nota: acá no necesitamos el booleano porque sabemos que el sucesor existe
-	der, _, _ := a.borrarNodo(actual.derecho, sucesor.clave)
-	actual.derecho = der
+	sucesor := buscarMinimo((*actual).derecho)
 
-	return actual, datoBorrado, true
+	(*actual).clave = sucesor.clave
+	(*actual).dato = sucesor.dato
+
+	a.borrarNodo(&(*actual).derecho, sucesor.clave)
+
+	return datoBorrado, true
 }
 
 func (a *abb[K, V]) iterarRangoNodo(actual *nodoAbb[K, V], desde *K, hasta *K, visitar func(K, V) bool) bool {
@@ -237,7 +209,7 @@ func (iter *iterAbb[K, V]) Avanzar() {
 }
 
 func CrearABB[K comparable, V any](funcion_cmp func(K, K) int) DiccionarioOrdenado[K, V] {
-	return &abb[K, V]{raiz: nil, cantidad: CANTIDAD_INICIAL, cmp: funcion_cmp}
+	return &abb[K, V]{raiz: nil, cantidad: 0, cmp: funcion_cmp}
 }
 
 func (a *abb[K, V]) Guardar(clave K, dato V) {
@@ -245,7 +217,7 @@ func (a *abb[K, V]) Guardar(clave K, dato V) {
 }
 
 func (a *abb[K, V]) Pertenece(clave K) bool {
-	return a.perteneceNodo(a.raiz, clave)
+	return a.obtenerNodo(a.raiz, clave) != nil
 }
 
 func (a *abb[K, V]) Obtener(clave K) V {
@@ -258,14 +230,15 @@ func (a *abb[K, V]) Obtener(clave K) V {
 
 func (a *abb[K, V]) Borrar(clave K) V {
 
-	nuevaRaiz, datoBorrado, encontrado := a.borrarNodo(a.raiz, clave)
-	if !encontrado {
+	dato, ok := a.borrarNodo(&a.raiz, clave)
+
+	if !ok {
 		panic("La clave no pertenece al diccionario")
 	}
 
-	a.raiz = nuevaRaiz
 	a.cantidad--
-	return datoBorrado
+
+	return dato
 }
 
 func (a *abb[K, V]) Cantidad() int {
