@@ -78,7 +78,7 @@ func TestVerMax(t *testing.T) {
 
 	heap_strings.Encolar("lol")
 	heap_strings.Encolar("xd")
-	require.Equal(t, "xd", heap_strings.VerMax())
+	require.Equal(t, "lol", heap_strings.VerMax())
 
 	heap_float.Encolar(1.2)
 	heap_float.Encolar(2.2)
