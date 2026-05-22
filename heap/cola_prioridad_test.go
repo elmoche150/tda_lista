@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const VOLUMEN_PRUEBA = 999999
+
 func cmpInt(a, b int) int {
 	if a > b {
 		return 1
@@ -213,13 +215,13 @@ func TestDesencolarMismaPrioridad(t *testing.T) {
 func TestVolumen(t *testing.T) {
 	heap_enteros := cola_prioridad.CrearHeap[int](cmpInt)
 
-	for i := 0; i < 999999; i++ {
+	for i := 0; i < VOLUMEN_PRUEBA; i++ {
 		heap_enteros.Encolar(i)
 		require.Equal(t, i, heap_enteros.VerMax())
 	}
 
-	for i := 0; i < 999999; i++ {
-		require.Equal(t, 999999-i-1, heap_enteros.Desencolar())
+	for i := 0; i < VOLUMEN_PRUEBA; i++ {
+		require.Equal(t, VOLUMEN_PRUEBA-i-1, heap_enteros.Desencolar())
 	}
 }
 

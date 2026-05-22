@@ -12,6 +12,12 @@ type heap[T any] struct {
 	cmp   func(T, T) int
 }
 
+func heapify[T any](datos []T, tam int, cmp func(T, T) int) {
+	for i := (tam / 2) - 1; i >= 0; i-- {
+		Downheap(datos, i, tam, cmp)
+	}
+}
+
 func CrearHeapArr[T any](arreglo []T, cmp func(T, T) int) ColaPrioridad[T] {
 	n := len(arreglo)
 	capacidad := n
@@ -29,9 +35,7 @@ func CrearHeapArr[T any](arreglo []T, cmp func(T, T) int) ColaPrioridad[T] {
 		cmp:   cmp,
 	}
 
-	for i := (n / 2) - 1; i >= 0; i-- {
-		auxDownheap(h.datos, i, h.cant, h.cmp)
-	}
+	heapify(h.datos, h.cant, h.cmp)
 
 	return h
 }
@@ -39,17 +43,15 @@ func CrearHeapArr[T any](arreglo []T, cmp func(T, T) int) ColaPrioridad[T] {
 func HeapSort[T any](elementos []T, cmp func(T, T) int) {
 	n := len(elementos)
 
-	for i := (n / 2) - 1; i >= 0; i-- {
-		auxDownheap(elementos, i, n, cmp)
-	}
+	heapify(elementos, n, cmp)
 
 	for tam := n - 1; tam > 0; tam-- {
 		elementos[0], elementos[tam] = elementos[tam], elementos[0]
-		auxDownheap(elementos, 0, tam, cmp)
+		Downheap(elementos, 0, tam, cmp)
 	}
 }
 
-func auxDownheap[T any](datos []T, pos, tam int, cmp func(T, T) int) {
+func Downheap[T any](datos []T, pos, tam int, cmp func(T, T) int) {
 	for {
 		izq := 2*pos + 1
 		der := 2*pos + 2
@@ -92,10 +94,6 @@ func (h *heap[T]) upheap(pos int) {
 	h.upheap(padre)
 }
 
-func (h *heap[T]) downheap(pos int) {
-	auxDownheap(h.datos, pos, h.cant, h.cmp)
-}
-
 func (h *heap[T]) Cantidad() int {
 	return h.cant
 }
@@ -134,24 +132,21 @@ func (h *heap[T]) Desencolar() T {
 		panic("La cola esta vacia")
 	}
 
-	max := h.datos[0]
-
 	h.cant--
 
-	if h.cant > 0 {
-		h.datos[0] = h.datos[h.cant]
-	}
+	h.datos[0], h.datos[h.cant] = h.datos[h.cant], h.datos[0]
+
+	max := h.datos[h.cant]
 
 	var cero T
 	h.datos[h.cant] = cero
 
 	if h.cant > 0 {
-		h.downheap(0)
+		Downheap(h.datos, 0, h.cant, h.cmp)
 	}
 
 	if h.cant*CRITERIO_REDUCCION <= len(h.datos) &&
 		len(h.datos) > CAPACIDAD_INICIAL {
-
 		h.redimensionar(len(h.datos) / FACTOR_REDIMENSION)
 	}
 
